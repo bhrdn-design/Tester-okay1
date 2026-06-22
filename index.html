@@ -37,7 +37,7 @@
     <h1>KONVERSI KALENDER</h1>
     <h2>
         Oleh : M. SHOLEH BAKHRUDDIN <br>
-        <span style="font-weight: bold; color: #4a548c; display: inline-block; margin-top: 4px;">Akurat Masehi, Hijriyah & Saka Jawa</span>
+        <span style="font-weight: bold; color: #4a548c; display: inline-block; margin-top: 4px;"></span>
     </h2>
 
     <div class="form-block">
@@ -93,24 +93,130 @@
     </div>
 
     <div class="footer">
-        _______ SEMOGA BERMANFAAT _______
+        _____ SEMOGA BERMANFAAT🙏😊 _____
     </div>
 </div>
 
 <script>
 // --- Data Master ---
-const namaHari = ["Senin", "Selasa", "Rabu", "Kamis", "Jum'at", "Sabtu", "Ahad"];
-const namaPasaran = ["Legi", "Pahing", "Pon", "Wage", "Kliwon"];
-const namaBulanM = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-const namaBulanH = ["", "Muharram", "Shafar", "Rabi'ul Awal", "Rabi'ul Akhir", "Jumadil Awal", "Jumadil Akhir", "Rajab", "Sya'ban", "Ramadhan", "Syawal", "Dzulqo'dah", "Dzulhijjah"];
+var namaHari = ["Ahad", "Senin", "Selasa", "Rabu", "Kamis", "Jum'at", "Sabtu"];
+var namaPasaran = ["Legi", "Pahing", "Pon", "Wage", "Kliwon"];
+var namaBulanM = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+var namaBulanH = ["", "Muharram", "Shafar", "Rabi'ul Awal", "Rabi'ul Akhir", "Jumadil Awal", "Jumadil Akhir", "Rajab", "Sya'ban", "Ramadhan", "Syawal", "Dzulqo'dah", "Dzulhijjah"];
 
 // --- Fungsi Tombol Hapus ---
 function BtHapusM(){ document.getElementById("Hasil1").innerHTML = "<i><b>Data Terhapus</b></i>"; }
 function BtHapusH(){ document.getElementById("Hasil2").innerHTML = "<i><b>Data Terhapus</b></i>"; }
 
-// --- Algoritma Julian Day (Masehi) ---
-function getJD_Masehi(D, M, Y) {
-    if (M <= 2) { Y -= 1; M += 12; }
-    let A = Math.floor(Y / 100);
-    let B = 2 - A + Math.floor(A / 4);
-    return Math.floor(365.25 * (Y + 4716)) + Math.floor(
+// --- Algoritma Julian Day (Menghitung Masehi) ---
+function hitungJDMasehi(D, M, Y) {
+    var y = Y;
+    var m = M;
+    if (m <= 2) { 
+        y -= 1; 
+        m += 12; 
+    }
+    var A = Math.floor(y / 100);
+    var B = 2 - A + Math.floor(A / 4);
+    return Math.floor(365.25 * (y + 4716)) + Math.floor(30.6001 * (m + 1)) + D + B - 1524;
+}
+
+// --- Algoritma Julian Day (Menghitung Hijriyah) ---
+function hitungJDHijri(D, M, Y) {
+    return Math.floor((11 * Y + 3) / 30) + 354 * Y + 30 * M - Math.floor((M - 1) / 2) + D + 1948440 - 385;
+}
+
+// --- Konversi Balik: JD -> Masehi ---
+function JDtoMasehi(JD) {
+    var Z = Math.floor(JD);
+    var alpha = Math.floor((Z - 1867216.25) / 36524.25);
+    var A = Z < 2299161 ? Z : Z + 1 + alpha - Math.floor(alpha / 4);
+    var B = A + 1524;
+    var C = Math.floor((B - 122.1) / 365.25);
+    var D = Math.floor(365.25 * C);
+    var E = Math.floor((B - D) / 30.6001);
+    
+    var d = B - D - Math.floor(30.6001 * E);
+    var m = E < 14 ? E - 1 : E - 13;
+    var y = m > 2 ? C - 4716 : C - 4715;
+    
+    return { d: d, m: m, y: y };
+}
+
+// --- Konversi Balik: JD -> Hijriyah ---
+function JDtoHijri(JD) {
+    var H = JD - 1948440;
+    var L1 = H + 10632;
+    var N = Math.floor((L1 - 1) / 10631);
+    var L2 = L1 - 10631 * N + 354;
+    var J = Math.floor((10985 - L2) / 5316) * Math.floor((50 * L2) / 17719) + Math.floor(L2 / 5670) * Math.floor((43 * L2) / 15238);
+    var L3 = L2 - Math.floor((30 - J) / 15) * Math.floor((17719 * J) / 50) - Math.floor(J / 16) * Math.floor((15238 * J) / 43) + 29;
+    var m = Math.floor((24 * L3) / 709);
+    var d = L3 - Math.floor((709 * m) / 24);
+    var y = 30 * N + J - 30;
+    
+    return { d: d, m: m, y: y };
+}
+
+// --- Output Formatting ---
+function formatOutput(JD, dM, mM, yM, dH, mH, yH) {
+    var hrIdx = JD % 7;
+    var psIdx = JD % 5;
+    
+    if (hrIdx < 0) hrIdx += 7;
+    if (psIdx < 0) psIdx += 5;
+    
+    var hari = namaHari[hrIdx];
+    var pasaran = namaPasaran[psIdx];
+    
+    // Perbaikan: Rumus standar Tahun Saka (Masehi - 78). Jika Jan/Feb sebelum Nyepi, dikurangi 79.
+    var tahunSaka = (mM <= 2) ? (yM - 79) : (yM - 78);
+    
+    // Rumus Kalender Jawa Peninggalan Sultan Agung (Hijriyah + 512).
+    var tahunJawa = yH + 512;
+    
+    var stringOut = hari + " " + pasaran + ", " + dM + " " + namaBulanM[mM] + " " + yM + " M <br>" + 
+                    "<span style='color:#e5980a; font-size:14px; font-weight:normal;'>" + 
+                    dH + " " + namaBulanH[mH] + " " + yH + " H / " + tahunSaka + " Saka / " + tahunJawa + " Jawa</span>";
+                    
+    return stringOut;
+}
+
+// --- Eksekusi Tombol Proses Masehi ---
+function BtHitungM() {
+    var tglM = parseInt(document.getElementById("tglM").value);
+    var blnM = parseInt(document.getElementById("blnM").value);
+    var thnM = parseInt(document.getElementById("thnM").value);
+    
+    if(!tglM || !blnM || !thnM) { 
+        document.getElementById("Hasil1").innerHTML = "Data tidak valid"; 
+        return; 
+    }
+    
+    var JD = hitungJDMasehi(tglM, blnM, thnM);
+    var hijri = JDtoHijri(JD);
+    
+    var hasil = formatOutput(JD, tglM, blnM, thnM, hijri.d, hijri.m, hijri.y);
+    document.getElementById("Hasil1").innerHTML = hasil;
+}
+
+// --- Eksekusi Tombol Proses Hijriyah ---
+function BtHitungH() {
+    var tglH = parseInt(document.getElementById("tglH").value);
+    var blnH = parseInt(document.getElementById("blnH").value);
+    var thnH = parseInt(document.getElementById("thnH").value);
+    
+    if(!tglH || !blnH || !thnH) { 
+        document.getElementById("Hasil2").innerHTML = "Data tidak valid"; 
+        return; 
+    }
+    
+    var JD = hitungJDHijri(tglH, blnH, thnH);
+    var masehi = JDtoMasehi(JD);
+    
+    var hasil = formatOutput(JD, masehi.d, masehi.m, masehi.y, tglH, blnH, thnH);
+    document.getElementById("Hasil2").innerHTML = hasil;
+}
+</script>
+</body>
+</html>
